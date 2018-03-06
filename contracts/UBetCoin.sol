@@ -203,12 +203,12 @@ contract Owned {
 }
 
 contract UBetCoin is StandardToken, Owned {
-    string public constant name = "UBetCoinV0016";
+    string public constant name = "UBetCoinV0021";
     string public constant symbol = "UBET";
     uint8 public constant decimals = 0;
 
-    /// Maximum tokens to be allocated.
-    uint256 public INITIAL_SUPPLY = 4000000000 * 10**uint256(decimals);
+    /// initial tokens to be allocated.
+    uint256 public initial_supply = 4000000000 * 10**uint256(decimals);
 
     /// Base exchange rate is set to 1 ETH = 962 UBET.
     uint256 public BASE_RATE = 962;
@@ -219,11 +219,11 @@ contract UBetCoin is StandardToken, Owned {
     /// Emitted for each sucuessful token purchase.
     event Issue(uint64 issueIndex, address addr, uint256 tokenAmount);
     
-    address public moneyWallet = 0xEbCb631e3875061870A3e95a88eFD469b1C04F64;
+    // All funds will be transferred in this wallet.
+    address public moneyWallet = 0x709cbaF04d5Bd1D62D156DBda13064f994938f28;
 
     function UBetCoin() public {
-      totalSupply_ = INITIAL_SUPPLY;
-      balances[msg.sender] = INITIAL_SUPPLY;
+      balances[msg.sender] = initial_supply;
     }
 
     /// @dev This default function allows token to be purchased by directly
@@ -275,14 +275,14 @@ contract UBetCoin is StandardToken, Owned {
     }
 
     /// @dev Returns the current price.
-    function price() public pure returns (uint256 tokens) {
+    function price() public view returns (uint256 tokens) {
         return computeTokenAmount(1 ether);
     }
 
     /// @dev Compute the amount of UBET token that can be purchased.
     /// @param ethAmount Amount of Ether to purchase UBET.
     /// @return Amount of UBET token to purchase
-    function computeTokenAmount(uint256 ethAmount) internal pure returns (uint256 tokens) {
+    function computeTokenAmount(uint256 ethAmount) internal view returns (uint256 tokens) {
         tokens = ethAmount.mul(BASE_RATE).div(10**18);
     }
 
