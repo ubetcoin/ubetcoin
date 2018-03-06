@@ -203,7 +203,7 @@ contract Owned {
 }
 
 contract UBetCoin is StandardToken, Owned {
-    string public constant name = "UBetCoinV0021";
+    string public constant name = "UBetCoin";
     string public constant symbol = "UBET";
     uint8 public constant decimals = 0;
 
