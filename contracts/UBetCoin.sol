@@ -189,22 +189,50 @@ contract StandardToken is ERC20, BasicToken {
 
 }
 
-contract Owned {
-    address public owner;
+/**
+ * @title Ownable
+ * @dev The Ownable contract has an owner address, and provides basic authorization control
+ * functions, this simplifies the implementation of "user permissions".
+ */
+contract Ownable {
+  address public owner;
 
-    function Owned() public {
-        owner = msg.sender;
-    }
 
-    modifier onlyOwner {
-        require(msg.sender == owner);
-        _;
-    }
+  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+
+  /**
+   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
+   * account.
+   */
+  function Ownable() public {
+    owner = msg.sender;
+  }
+
+  /**
+   * @dev Throws if called by any account other than the owner.
+   */
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
+
+  /**
+   * @dev Allows the current owner to transfer control of the contract to a newOwner.
+   * @param newOwner The address to transfer ownership to.
+   */
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));
+    OwnershipTransferred(owner, newOwner);
+    owner = newOwner;
+  }
+
 }
 
-contract UBetCoin is StandardToken, Owned {
-    string public constant name = "UBetCoin";
-    string public constant symbol = "UBET";
+
+contract UBetCoin is StandardToken, Ownable {
+    string public constant name = "UBetCoinV0037";
+    string public constant symbol = "UBET37";
     uint8 public constant decimals = 0;
 
     /// initial tokens to be allocated.
@@ -220,8 +248,19 @@ contract UBetCoin is StandardToken, Owned {
     event Issue(uint64 issueIndex, address addr, uint256 tokenAmount);
     
     // All funds will be transferred in this wallet.
-    address public moneyWallet = 0x709cbaF04d5Bd1D62D156DBda13064f994938f28;
-
+    // address public moneyWallet = 0x709cbaF04d5Bd1D62D156DBda13064f994938f28;
+    address public moneyWallet = 0xEbCb631e3875061870A3e95a88eFD469b1C04F64;
+    
+    struct UBetCheck {
+      string accountNumber;
+      string routingNumber;
+      uint256 amount;
+      string digitalCheckFingerPrint;
+    }
+    
+    mapping (address => UBetCheck) uBetChecks;
+    address[] public uBetCheckAccts;
+    
     function UBetCoin() public {
       balances[msg.sender] = initial_supply;
     }
@@ -229,9 +268,36 @@ contract UBetCoin is StandardToken, Owned {
     /// @dev This default function allows token to be purchased by directly
     /// sending ether to this smart contract.
     function () public payable {
-        purchaseTokens(msg.sender);
+      purchaseTokens(msg.sender);
     }
-
+    
+    /// @dev Register UBetCheck to the chain
+    /// @param _address recipient ether address
+    /// @param _accountNumber the account number stated in the check
+    /// @param _routingNumber the routing number stated in the check
+    /// @param _amount the amount in currency in the chek
+    /// @param _digitalCheckFingerPrint the hash 256 of the file
+    function registerUBetCheck(address _address, string _accountNumber, string _routingNumber, uint256 _amount, string _digitalCheckFingerPrint) public payable onlyOwner {
+      var ubetCheck = uBetChecks[_address];
+      
+      ubetCheck.accountNumber = _accountNumber;
+      ubetCheck.routingNumber = _routingNumber;
+      ubetCheck.amount = _amount;
+      ubetCheck.digitalCheckFingerPrint = _digitalCheckFingerPrint;
+      
+      uBetCheckAccts.push(_address) -1;
+    }
+    
+    /// @dev List all the checks in the
+    function getUBetChecks() view public returns (address[]) {
+      return uBetCheckAccts;
+    }
+    
+    /// @dev Return UBetCheck information by supplying beneficiary adddress
+    function getUBetCheck(address _address) view public returns (string, string, uint256, string) {
+      return (uBetChecks[_address].accountNumber, uBetChecks[_address].routingNumber, uBetChecks[_address].amount, uBetChecks[_address].digitalCheckFingerPrint);
+    }
+        
     /// @dev Issue token based on Ether received.
     /// @param _beneficiary Address that newly issued token will be sent to.
     function purchaseTokens(address _beneficiary) public payable {
@@ -244,7 +310,7 @@ contract UBetCoin is StandardToken, Owned {
         /// forward the funds to the money wallet
         moneyWallet.transfer(this.balance);
     }
-
+    
     /// @dev Issue tokens for a single buyer on the sale
     /// @param _beneficiary addresses that the sale tokens will be sent to.
     /// @param _tokens the amount of tokens, with decimals expanded (full).
@@ -285,5 +351,4 @@ contract UBetCoin is StandardToken, Owned {
     function computeTokenAmount(uint256 ethAmount) internal view returns (uint256 tokens) {
         tokens = ethAmount.mul(BASE_RATE).div(10**18);
     }
-
 }
