@@ -232,8 +232,8 @@ contract Ownable {
 
 contract UBetCoin is StandardToken, Ownable {
   
-    string public constant name = "UBetCoinV0041";
-    string public constant symbol = "UBET41";
+    string public constant name = "UBetCoin";
+    string public constant symbol = "UBET";
     uint8 public constant decimals = 0;
     uint256 public constant totalCoinSupply = 4000000000 * (10 ** uint256(decimals));  
 
@@ -247,9 +247,8 @@ contract UBetCoin is StandardToken, Ownable {
     event Issue(uint64 issueIndex, address addr, uint256 tokenAmount);
     
     // All funds will be transferred in this wallet.
-    // address public moneyWallet = 0x709cbaF04d5Bd1D62D156DBda13064f994938f28;
-    address public moneyWallet = 0xEbCb631e3875061870A3e95a88eFD469b1C04F64;
-    
+    address public moneyWallet = 0x709cbaF04d5Bd1D62D156DBda13064f994938f28;
+  
     struct UBetCheck {
       string accountNumber;
       string routingNumber;
