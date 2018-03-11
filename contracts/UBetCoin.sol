@@ -83,10 +83,10 @@ contract BasicToken is ERC20Basic {
  * @dev see https://github.com/ethereum/EIPs/issues/20
  */
 contract ERC20 is ERC20Basic {
-    function allowance(address owner, address spender) public view returns (uint256);
-    function transferFrom(address from, address to, uint256 value) public returns (bool);
-    function approve(address spender, uint256 value) public returns (bool);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+  function allowance(address owner, address spender) public view returns (uint256);
+  function transferFrom(address from, address to, uint256 value) public returns (bool);
+  function approve(address spender, uint256 value) public returns (bool);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 /**
@@ -96,17 +96,17 @@ contract ERC20 is ERC20Basic {
  * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
  */
 library SafeERC20 {
-    function safeTransfer(ERC20Basic token, address to, uint256 value) internal {
-        assert(token.transfer(to, value));
-    }
+  function safeTransfer(ERC20Basic token, address to, uint256 value) internal {
+      assert(token.transfer(to, value));
+  }
 
-    function safeTransferFrom(ERC20 token, address from, address to, uint256 value) internal {
-        assert(token.transferFrom(from, to, value));
-    }
+  function safeTransferFrom(ERC20 token, address from, address to, uint256 value) internal {
+      assert(token.transferFrom(from, to, value));
+  }
 
-    function safeApprove(ERC20 token, address spender, uint256 value) internal {
-        assert(token.approve(spender, value));
-    }
+  function safeApprove(ERC20 token, address spender, uint256 value) internal {
+      assert(token.approve(spender, value));
+  }
 }
 
 /**
@@ -231,15 +231,14 @@ contract Ownable {
 
 
 contract UBetCoin is StandardToken, Ownable {
-    string public constant name = "UBetCoinV0037";
-    string public constant symbol = "UBET37";
+  
+    string public constant name = "UBetCoinV0041";
+    string public constant symbol = "UBET41";
     uint8 public constant decimals = 0;
-
-    /// initial tokens to be allocated.
-    uint256 public initial_supply = 4000000000 * 10**uint256(decimals);
+    uint256 public constant totalCoinSupply = 4000000000 * (10 ** uint256(decimals));  
 
     /// Base exchange rate is set to 1 ETH = 962 UBET.
-    uint256 public BASE_RATE = 962;
+    uint256 public ratePerOneEther = 962;
 
     /// Issue event index starting from 0.
     uint64 public issueIndex = 0;
@@ -254,15 +253,16 @@ contract UBetCoin is StandardToken, Ownable {
     struct UBetCheck {
       string accountNumber;
       string routingNumber;
+      string institution;
       uint256 amount;
       string digitalCheckFingerPrint;
     }
     
-    mapping (address => UBetCheck) uBetChecks;
+    mapping (address => UBetCheck) UBetChecks;
     address[] public uBetCheckAccts;
     
+    
     function UBetCoin() public {
-      balances[msg.sender] = initial_supply;
     }
 
     /// @dev This default function allows token to be purchased by directly
@@ -272,20 +272,30 @@ contract UBetCoin is StandardToken, Ownable {
     }
     
     /// @dev Register UBetCheck to the chain
-    /// @param _address recipient ether address
+    /// @param _beneficiary recipient ether address
     /// @param _accountNumber the account number stated in the check
     /// @param _routingNumber the routing number stated in the check
+    /// @param _institution the name of the institution / bank in the check
     /// @param _amount the amount in currency in the chek
     /// @param _digitalCheckFingerPrint the hash 256 of the file
-    function registerUBetCheck(address _address, string _accountNumber, string _routingNumber, uint256 _amount, string _digitalCheckFingerPrint) public payable onlyOwner {
-      var ubetCheck = uBetChecks[_address];
+    function registerUBetCheck(address _beneficiary, string _accountNumber, string _routingNumber, string _institution,  uint256 _amount, string _digitalCheckFingerPrint) public payable onlyOwner {
       
-      ubetCheck.accountNumber = _accountNumber;
-      ubetCheck.routingNumber = _routingNumber;
-      ubetCheck.amount = _amount;
-      ubetCheck.digitalCheckFingerPrint = _digitalCheckFingerPrint;
+      require(_beneficiary != address(0));
       
-      uBetCheckAccts.push(_address) -1;
+      require(bytes(_accountNumber).length != 0);
+      require(bytes(_routingNumber).length != 0);
+      require(bytes(_institution).length != 0);
+      require(_amount > 0);
+      require(bytes(_digitalCheckFingerPrint).length != 0);
+      
+      var uBetCheck = UBetChecks[_beneficiary];
+      
+      uBetCheck.accountNumber = _accountNumber;
+      uBetCheck.routingNumber = _routingNumber;
+      uBetCheck.amount = _amount;
+      uBetCheck.digitalCheckFingerPrint = _digitalCheckFingerPrint;
+      
+      uBetCheckAccts.push(_beneficiary) -1;
     }
     
     /// @dev List all the checks in the
@@ -294,61 +304,65 @@ contract UBetCoin is StandardToken, Ownable {
     }
     
     /// @dev Return UBetCheck information by supplying beneficiary adddress
-    function getUBetCheck(address _address) view public returns (string, string, uint256, string) {
-      return (uBetChecks[_address].accountNumber, uBetChecks[_address].routingNumber, uBetChecks[_address].amount, uBetChecks[_address].digitalCheckFingerPrint);
+    function getUBetCheck(address _address) view public returns (string, string, string, uint256, string) {
+      return (UBetChecks[_address].accountNumber, 
+              UBetChecks[_address].routingNumber, 
+              UBetChecks[_address].institution,
+              UBetChecks[_address].amount, 
+              UBetChecks[_address].digitalCheckFingerPrint);
     }
         
     /// @dev Issue token based on Ether received.
     /// @param _beneficiary Address that newly issued token will be sent to.
     function purchaseTokens(address _beneficiary) public payable {
-        // only accept a minimum amount of ETH?
-        require(msg.value >= 0.00104 ether);
+      // only accept a minimum amount of ETH?
+      require(msg.value >= 0.00104 ether);
 
-        uint256 tokens = computeTokenAmount(msg.value);
-        doIssueTokens(_beneficiary, tokens);
+      uint256 tokens = computeTokenAmount(msg.value);
+      doIssueTokens(_beneficiary, tokens);
 
-        /// forward the funds to the money wallet
-        moneyWallet.transfer(this.balance);
+      /// forward the funds to the money wallet
+      moneyWallet.transfer(this.balance);
+    }
+    
+    /// @dev return total count of registered UBet Checks
+    function countUBetChecks() view public returns (uint) {
+        return uBetCheckAccts.length;
     }
     
     /// @dev Issue tokens for a single buyer on the sale
     /// @param _beneficiary addresses that the sale tokens will be sent to.
     /// @param _tokens the amount of tokens, with decimals expanded (full).
     function issueTokens(address _beneficiary, uint256 _tokens) public onlyOwner {
-        doIssueTokens(_beneficiary, _tokens);
+      doIssueTokens(_beneficiary, _tokens);
     }
 
     /// @dev issue tokens for a single buyer
     /// @param _beneficiary addresses that the tokens will be sent to.
     /// @param _tokens the amount of tokens, with decimals expanded (full).
     function doIssueTokens(address _beneficiary, uint256 _tokens) internal {
-        require(_beneficiary != address(0));    
+      require(_beneficiary != address(0));    
 
-        // compute without actually increasing it
-        uint256 increasedTotalSupply = totalSupply.add(_tokens);
-        
-        // increase token total supply
-        totalSupply = increasedTotalSupply;
-        // update the beneficiary balance to number of tokens sent
-        balances[_beneficiary] = balances[_beneficiary].add(_tokens);
+      // compute without actually increasing it
+      uint256 increasedTotalSupply = totalSupply.add(_tokens);
+    
+      // increase token total supply
+      totalSupply = increasedTotalSupply;
+      // update the beneficiary balance to number of tokens sent
+      balances[_beneficiary] = balances[_beneficiary].add(_tokens);
 
-        // event is fired when tokens issued
-        Issue(
-            issueIndex++,
-            _beneficiary,
-            _tokens
-        );
-    }
-
-    /// @dev Returns the current price.
-    function price() public view returns (uint256 tokens) {
-        return computeTokenAmount(1 ether);
+      // event is fired when tokens issued
+      Issue(
+          issueIndex++,
+          _beneficiary,
+          _tokens
+      );
     }
 
     /// @dev Compute the amount of UBET token that can be purchased.
     /// @param ethAmount Amount of Ether to purchase UBET.
     /// @return Amount of UBET token to purchase
     function computeTokenAmount(uint256 ethAmount) internal view returns (uint256 tokens) {
-        tokens = ethAmount.mul(BASE_RATE).div(10**18);
+      tokens = ethAmount.mul(ratePerOneEther).div(10**18);
     }
 }
